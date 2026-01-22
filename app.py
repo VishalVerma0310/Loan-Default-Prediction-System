@@ -113,15 +113,23 @@ if st.button("Predict"):
     # Risk evaluation
     if probability >= 0.30:
         risk_status = "High Risk of Default"
-        risk_color = "🔴"
+        risk_color = "#FF4B4B"  # Red
+        risk_emoji = "🔴"
     else:
         risk_status = "Low Risk of Default"
-        risk_color = "🟢"
+        risk_color = "#4BB543"  # Green
+        risk_emoji = "🟢"
 
     # Display metrics in cards
     col1, col2 = st.columns(2)
     col1.metric("Default Probability", f"{probability:.2f}")
-    col2.markdown(f"<h3 style='color:{ 'red' if probability >= 0.3 else 'green' }'>{risk_color} {risk_status}</h3>", unsafe_allow_html=True)
+    col2.markdown(f"<h3 style='color:{risk_color};'>{risk_emoji} {risk_status}</h3>", unsafe_allow_html=True)
+
+    # Optional: Add insight text
+    st.info(
+        "💡 This prediction is based on historical loan data and risk features. "
+        "A probability above 0.30 indicates a higher risk of loan default."
+    )
 
 st.markdown("---")
 
