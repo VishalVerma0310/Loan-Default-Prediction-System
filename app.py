@@ -75,7 +75,7 @@ st.set_page_config(
 # APP HEADER
 # =========================
 st.markdown(
-    "<h1 style='text-align: center; color: #ff6b08;'>💰 Loan Default Prediction System</h1>",
+    "<h1 style='text-align: center; color: #4B0082;'>💰 Loan Default Prediction System</h1>",
     unsafe_allow_html=True
 )
 st.markdown(
