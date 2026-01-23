@@ -16,9 +16,9 @@ st.caption("Machine Learning powered credit risk assessment")
 # --------------------------------------------------
 # Load Model & Encoders
 # --------------------------------------------------
-joblib.load("model/loan_model.pkl")
-label_encoders = joblib.load("label_encoders.pkl")
-selected_features = joblib.load("selected_features.pkl")
+model = joblib.load("model/loan_model.pkl")
+label_encoders = joblib.load("model/label_encoders.pkl")
+selected_features = joblib.load("model/feature_names.pkl")
 
 # --------------------------------------------------
 # Feature Lists (use your original ones if named differently)
