@@ -11,7 +11,7 @@ label_encoders = joblib.load("model/label_encoders.pkl")
 selected_features = joblib.load("model/feature_names.pkl")
 
 # =========================
-# USER FRIENDLY LABELS
+# FEATURE DISPLAY NAMES
 # =========================
 feature_labels = {
     "person_age": "Age (Years)",
@@ -43,13 +43,16 @@ numerical_features = [
 # PREPROCESSING FUNCTION
 # =========================
 def preprocess_input(df, label_encoders):
-    for col in numerical_features:
+    numerical_cols_with_outliers = numerical_features
+
+    for col in numerical_cols_with_outliers:
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
         IQR = Q3 - Q1
-        upper = Q3 + 1.5 * IQR
-        lower = Q1 - 1.5 * IQR
-        df[col] = np.clip(df[col], lower, upper)
+        upper_bound = Q3 + 1.5 * IQR
+        lower_bound = Q1 - 1.5 * IQR
+        df[col] = np.where(df[col] > upper_bound, upper_bound, df[col])
+        df[col] = np.where(df[col] < lower_bound, lower_bound, df[col])
 
     for col in label_encoders:
         df[col] = label_encoders[col].transform(df[col])
@@ -72,11 +75,11 @@ st.set_page_config(
 # APP HEADER
 # =========================
 st.markdown(
-    "<h1 style='text-align:center; color:#4B0082;'>💰 Loan Default Prediction System</h1>",
+    "<h1 style='text-align: center; color: #4B0082;'>💰 Loan Default Prediction System</h1>",
     unsafe_allow_html=True
 )
 st.markdown(
-    "<h4 style='text-align:center; color:gray;'>Interactive ML Dashboard to Predict Loan Default Risk</h4>",
+    "<h4 style='text-align: center; color: gray;'>Interactive ML Dashboard to Predict Loan Default Risk</h4>",
     unsafe_allow_html=True
 )
 st.markdown("---")
@@ -86,11 +89,11 @@ st.markdown("---")
 # =========================
 st.header("Applicant Details")
 
-input_data = {}
 col1, col2 = st.columns(2)
+input_data = {}
 
 with col1:
-    st.subheader("Personal & Financial Information")
+    st.subheader("Financial & Personal Information")
     for feature in numerical_features[:4]:
         input_data[feature] = st.number_input(
             feature_labels[feature],
@@ -99,7 +102,7 @@ with col1:
         )
 
 with col2:
-    st.subheader("Loan & Credit Information")
+    st.subheader("Credit & Loan Details")
     for feature in numerical_features[4:]:
         input_data[feature] = st.number_input(
             feature_labels[feature],
@@ -115,9 +118,6 @@ with col2:
     )
 
     for col in label_encoders:
-        if col == "previous_loan_defaults_on_file":
-            continue
-
         input_data[col] = st.selectbox(
             col.replace("_", " ").title(),
             options=label_encoders[col].classes_
@@ -136,16 +136,16 @@ if st.button("Predict"):
     probability = model.predict_proba(input_df)[0][1]
 
     if probability >= 0.30:
-        status = "High Risk of Default"
-        icon = "🔴"
+        risk_status = "High Risk of Default"
+        risk_color = "🔴"
     else:
-        status = "Low Risk of Default"
-        icon = "🟢"
+        risk_status = "Low Risk of Default"
+        risk_color = "🟢"
 
     col1, col2 = st.columns(2)
     col1.metric("Default Probability", f"{probability:.2f}")
     col2.markdown(
-        f"<h3 style='color:{'red' if probability >= 0.3 else 'green'}'>{icon} {status}</h3>",
+        f"<h3 style='color:{'red' if probability >= 0.3 else 'green'}'>{risk_color} {risk_status}</h3>",
         unsafe_allow_html=True
     )
 
@@ -155,6 +155,6 @@ st.markdown("---")
 # FOOTER
 # =========================
 st.markdown(
-    "<div style='text-align:center; color:gray; font-size:12px;'>Developed by Vishal Verma | Portfolio Project</div>",
+    "<div style='text-align: center; color: gray; font-size: 12px;'>Developed by Vishal Verma | Portfolio Project</div>",
     unsafe_allow_html=True
 )
