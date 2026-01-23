@@ -11,34 +11,39 @@ label_encoders = joblib.load("model/label_encoders.pkl")
 selected_features = joblib.load("model/feature_names.pkl")
 
 # =========================
-# RAW INPUT FEATURES
+# FEATURE DISPLAY NAMES
 # =========================
-raw_numerical_features = [
-    'person_age',
-    'person_income',
-    'person_emp_exp',
-    'loan_amnt',
-    'loan_int_rate',
-    'loan_percent_income',
-    'cb_person_cred_hist_length',
-    'credit_score',
-    'previous_loan_defaults_on_file'
+feature_labels = {
+    "person_age": "Age (Years)",
+    "person_income": "Annual Income",
+    "person_emp_exp": "Work Experience (Years)",
+    "loan_amnt": "Loan Amount",
+    "loan_int_rate": "Interest Rate (%)",
+    "loan_percent_income": "Loan to Income Ratio",
+    "cb_person_cred_hist_length": "Credit History Length (Years)",
+    "credit_score": "Credit Score",
+    "previous_loan_defaults_on_file": "Previous Loan Default?"
+}
+
+# =========================
+# NUMERICAL FEATURES
+# =========================
+numerical_features = [
+    "person_age",
+    "person_income",
+    "person_emp_exp",
+    "loan_amnt",
+    "loan_int_rate",
+    "loan_percent_income",
+    "cb_person_cred_hist_length",
+    "credit_score"
 ]
 
 # =========================
 # PREPROCESSING FUNCTION
 # =========================
 def preprocess_input(df, label_encoders):
-    numerical_cols_with_outliers = [
-        'person_age',
-        'person_income',
-        'person_emp_exp',
-        'loan_amnt',
-        'loan_int_rate',
-        'loan_percent_income',
-        'cb_person_cred_hist_length',
-        'credit_score'
-    ]
+    numerical_cols_with_outliers = numerical_features
 
     for col in numerical_cols_with_outliers:
         Q1 = df[col].quantile(0.25)
@@ -49,13 +54,11 @@ def preprocess_input(df, label_encoders):
         df[col] = np.where(df[col] > upper_bound, upper_bound, df[col])
         df[col] = np.where(df[col] < lower_bound, lower_bound, df[col])
 
-    # Label encoding
     for col in label_encoders:
         df[col] = label_encoders[col].transform(df[col])
 
-    # Feature engineering
-    df['debt_to_income_ratio'] = df['loan_amnt'] / df['person_income'].replace(0, 1)
-    df['age_to_experience_ratio'] = df['person_age'] / df['person_emp_exp'].replace(0, 1)
+    df["debt_to_income_ratio"] = df["loan_amnt"] / df["person_income"].replace(0, 1)
+    df["age_to_experience_ratio"] = df["person_age"] / df["person_emp_exp"].replace(0, 1)
 
     return df
 
@@ -75,7 +78,10 @@ st.markdown(
     "<h1 style='text-align: center; color: #4B0082;'>💰 Loan Default Prediction System</h1>",
     unsafe_allow_html=True
 )
-st.markdown("<h4 style='text-align: center; color: gray;'>Interactive ML Dashboard to Predict Loan Default Risk</h4>", unsafe_allow_html=True)
+st.markdown(
+    "<h4 style='text-align: center; color: gray;'>Interactive ML Dashboard to Predict Loan Default Risk</h4>",
+    unsafe_allow_html=True
+)
 st.markdown("---")
 
 # =========================
@@ -84,19 +90,38 @@ st.markdown("---")
 st.header("Applicant Details")
 
 col1, col2 = st.columns(2)
+input_data = {}
 
 with col1:
-    input_data = {}
-    st.subheader("Numerical Inputs")
-    for feature in raw_numerical_features[:5]:
-        input_data[feature] = st.number_input(f"{feature}", value=0.0)
+    st.subheader("Financial & Personal Information")
+    for feature in numerical_features[:4]:
+        input_data[feature] = st.number_input(
+            feature_labels[feature],
+            value=None,
+            placeholder="Enter value"
+        )
 
 with col2:
-    st.subheader("Numerical & Categorical Inputs")
-    for feature in raw_numerical_features[5:]:
-        input_data[feature] = st.number_input(f"{feature}", value=0.0)
+    st.subheader("Credit & Loan Details")
+    for feature in numerical_features[4:]:
+        input_data[feature] = st.number_input(
+            feature_labels[feature],
+            value=None,
+            placeholder="Enter value"
+        )
+
+    input_data["previous_loan_defaults_on_file"] = (
+        1 if st.selectbox(
+            feature_labels["previous_loan_defaults_on_file"],
+            ["No", "Yes"]
+        ) == "Yes" else 0
+    )
+
     for col in label_encoders:
-        input_data[col] = st.selectbox(f"{col}", options=label_encoders[col].classes_)
+        input_data[col] = st.selectbox(
+            col.replace("_", " ").title(),
+            options=label_encoders[col].classes_
+        )
 
 st.markdown("---")
 
@@ -110,7 +135,6 @@ if st.button("Predict"):
 
     probability = model.predict_proba(input_df)[0][1]
 
-    # Risk evaluation
     if probability >= 0.30:
         risk_status = "High Risk of Default"
         risk_color = "🔴"
@@ -118,10 +142,12 @@ if st.button("Predict"):
         risk_status = "Low Risk of Default"
         risk_color = "🟢"
 
-    # Display metrics in cards
     col1, col2 = st.columns(2)
     col1.metric("Default Probability", f"{probability:.2f}")
-    col2.markdown(f"<h3 style='color:{ 'red' if probability >= 0.3 else 'green' }'>{risk_color} {risk_status}</h3>", unsafe_allow_html=True)
+    col2.markdown(
+        f"<h3 style='color:{'red' if probability >= 0.3 else 'green'}'>{risk_color} {risk_status}</h3>",
+        unsafe_allow_html=True
+    )
 
 st.markdown("---")
 
