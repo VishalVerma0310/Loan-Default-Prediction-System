@@ -29,7 +29,8 @@ The workflow covers the complete ML lifecycle:
 
 The project is deployed using Streamlit:
 
-👉 **[Live Streamlit App](loan-default-prediction-system-vv.streamlit.app)**
+👉 **[Live Streamlit App](https://loan-default-prediction-system-vv.streamlit.app
+)**
 
 Users can input borrower details and receive instant loan default risk predictions.
 
