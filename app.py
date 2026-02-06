@@ -43,6 +43,8 @@ numerical_features = [
 # PREPROCESSING FUNCTION
 # =========================
 def preprocess_input(df, label_encoders):
+
+    # Clip numerical outliers
     for col in numerical_features:
         Q1 = df[col].quantile(0.25)
         Q3 = df[col].quantile(0.75)
@@ -51,9 +53,18 @@ def preprocess_input(df, label_encoders):
         lower = Q1 - 1.5 * IQR
         df[col] = np.clip(df[col], lower, upper)
 
+    # SAFE label encoding
     for col in label_encoders:
-        df[col] = label_encoders[col].transform(df[col])
+        le = label_encoders[col]
 
+        # ensure values exist in encoder classes
+        df[col] = df[col].apply(
+            lambda x: x if x in le.classes_ else le.classes_[0]
+        )
+
+        df[col] = le.transform(df[col])
+
+    # feature engineering
     df["debt_to_income_ratio"] = df["loan_amnt"] / df["person_income"].replace(0, 1)
     df["age_to_experience_ratio"] = df["person_age"] / df["person_emp_exp"].replace(0, 1)
 
@@ -79,10 +90,12 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 st.markdown(
     "<h4 style='text-align:center; color:gray;'>Interactive ML Dashboard to Predict Loan Default Risk</h4>",
     unsafe_allow_html=True
 )
+
 st.markdown("---")
 
 # =========================
@@ -111,13 +124,13 @@ with col2:
             placeholder="Enter value"
         )
 
-    input_data["previous_loan_defaults_on_file"] = (
-        1 if st.selectbox(
-            feature_labels["previous_loan_defaults_on_file"],
-            ["No", "Yes"]
-        ) == "Yes" else 0
+    # FIX: use encoder classes instead of manual 0/1
+    input_data["previous_loan_defaults_on_file"] = st.selectbox(
+        feature_labels["previous_loan_defaults_on_file"],
+        options=label_encoders["previous_loan_defaults_on_file"].classes_
     )
 
+    # other categorical features
     for col in label_encoders:
         if col == "previous_loan_defaults_on_file":
             continue
@@ -134,6 +147,7 @@ st.markdown("---")
 # =========================
 if st.button("Predict"):
     input_df = pd.DataFrame([input_data])
+
     input_df = preprocess_input(input_df, label_encoders)
     input_df = input_df[selected_features]
 
@@ -149,7 +163,9 @@ if st.button("Predict"):
         color = "green"
 
     col1, col2 = st.columns(2)
+
     col1.metric("Default Probability", f"{probability:.2f}")
+
     col2.markdown(
         f"<h3 style='color:{color}'>{icon} {status}</h3>",
         unsafe_allow_html=True
